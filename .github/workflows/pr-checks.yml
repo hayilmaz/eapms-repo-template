@@ -1,0 +1,46 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Code Quality
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        
+    - name: Install Dependencies
+      run: npm ci
+      
+    - name: Code Style Check
+      run: npm run lint
+      
+    - name: Security Scan
+      run: npm audit
+      
+    - name: Comment PR
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const output = `
+          ### PR Quality Check Results
+          
+          - Code Style: ✅ Passed
+          - Security: ✅ No critical issues
+          
+          *Note: This is an automated check. Please ensure all directive checklist items are completed.*
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
